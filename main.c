@@ -10,7 +10,7 @@
 
 typedef struct {
   unsigned char glyph;
-  size_t fg, bg;
+  unsigned char fg, bg;
 } Cell;
 
 typedef struct {
@@ -25,10 +25,6 @@ static Grid *grid_init(int w, int h) {
 
   grid->w = w;
   grid->h = h;
-
-  // TODO: is this needed?
-  /* grid->image = GenImageColor(w, h, BLANK); */
-  /* grid->texture = LoadTextureFromImage(grid->image); */
 
   return grid;
 }
@@ -46,9 +42,7 @@ static void grid_fill(Grid *grid, Cell cell) {
 }
 
 static Texture grid_render_texture(Grid *grid) {
-
   Image image = GenImageColor(grid->w, grid->h, BLANK);
-
   unsigned char *image_data = image.data;
 
   for (int y = 0; y < grid->h; y++) {
@@ -57,19 +51,28 @@ static Texture grid_render_texture(Grid *grid) {
 
       int pixel_offset = (y * grid->w + x) * 4;
       image_data[pixel_offset + 0] = cell.glyph; // R: character
-      image_data[pixel_offset + 1] = cell.glyph; // G: fg color
-      image_data[pixel_offset + 2] = cell.glyph; // B: bg color
+      image_data[pixel_offset + 1] = cell.fg;    // G: fg color
+      image_data[pixel_offset + 2] = cell.bg;    // B: bg color
       image_data[pixel_offset + 3] = 255;        // A: alpha
     }
   }
 
   Texture texture = LoadTextureFromImage(image);
+  UnloadImage(image);
 
   return texture;
 }
 
+static void grid_free(Grid *grid) { free(grid); }
+
 int main(int argc, char *argv[]) {
+
+  Grid *grid = grid_init(GRID_W, GRID_H);
+  grid_fill(grid, (Cell){'$', 15, 0});
+  grid_set(grid, 10, 10, (Cell){'A', 4, 0});
+
   InitWindow(WINDOW_W, WINDOW_H, "CP437 Tilemap Test");
+
   Texture fontAtlas = LoadTexture("./MxPlus_IBM_BIOS_8px.png");
   Shader shader = LoadShader(NULL, "shader.glsl");
 
@@ -79,42 +82,13 @@ int main(int argc, char *argv[]) {
   int cellSizeLoc = GetShaderLocation(shader, "cellSize");
   int gridSizeLoc = GetShaderLocation(shader, "gridSize");
 
-  int resolution[2] = {WINDOW_W, WINDOW_H};
-  SetShaderValue(shader, resolutionLoc, resolution, SHADER_UNIFORM_IVEC2);
-
   int cell_size[2] = {GLYPH_WH, GLYPH_WH};
   SetShaderValue(shader, cellSizeLoc, cell_size, SHADER_UNIFORM_IVEC2);
 
-  int grid_size[2] = {GRID_W, GRID_H};
+  int grid_size[2] = {grid->w, grid->h};
   SetShaderValue(shader, gridSizeLoc, grid_size, SHADER_UNIFORM_IVEC2);
 
-  // Create grid texture - must be GRID_W x GRID_H
-  Image gridImage = GenImageColor(GRID_W, GRID_H, BLACK);
-  unsigned char *gridData = (unsigned char *)gridImage.data;
-
-  // Fill with repeating "Hello, World!" with colors
-  const char *text = "Hello, World!";
-  int textLen = strlen(text);
-
-  for (int y = 0; y < GRID_H; y++) {
-    for (int x = 0; x < GRID_W; x++) {
-      int index = (y * GRID_W + x) % textLen;
-      char ch = text[index];
-
-      // Vary colors based on position for visual interest
-      unsigned char fg = x % 16; // FG color (0-15 VGA palette)
-      unsigned char bg = y % 16;
-
-      int pixelOffset = (y * GRID_W + x) * 4;
-      gridData[pixelOffset + 0] = (unsigned char)ch; // R: character
-      gridData[pixelOffset + 1] = fg;                // G: foreground color
-      gridData[pixelOffset + 2] = bg;                // B: background color
-      gridData[pixelOffset + 3] = 255;               // A: alpha
-    }
-  }
-
-  Texture gridTexture = LoadTextureFromImage(gridImage);
-  UnloadImage(gridImage);
+  Texture gridTexture = grid_render_texture(grid);
 
   // Create a fullscreen quad to render onto
   Texture dummy =
@@ -139,6 +113,8 @@ int main(int argc, char *argv[]) {
   UnloadTexture(dummy);
   UnloadShader(shader);
   CloseWindow();
+
+  grid_free(grid);
 
   return EXIT_SUCCESS;
 }
