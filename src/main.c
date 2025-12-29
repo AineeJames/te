@@ -6,7 +6,6 @@
 #define GLYPH_WH 16
 
 int main(int argc, char *argv[]) {
-
   InitWindow(0, 0, "te");
   SetWindowSize(GetMonitorWidth(0), GetMonitorHeight(0));
   SetWindowMonitor(0);
