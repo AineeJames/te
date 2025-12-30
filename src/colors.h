@@ -1,0 +1,26 @@
+#ifndef COLORS_H_
+#define COLORS_H_
+
+typedef enum {
+  VGA_BLACK = 0,
+  VGA_BLUE,
+  VGA_GREEN,
+  VGA_CYAN,
+  VGA_RED,
+  VGA_MAGENTA,
+  VGA_BROWN, // aka Yellow (dark)
+  VGA_LIGHT_GRAY,
+
+  VGA_DARK_GRAY,
+  VGA_LIGHT_BLUE,
+  VGA_LIGHT_GREEN,
+  VGA_LIGHT_CYAN,
+  VGA_LIGHT_RED,
+  VGA_LIGHT_MAGENTA,
+  VGA_YELLOW,
+  VGA_WHITE,
+
+  VGA_COLOR_COUNT // = 16
+} VGA_Color;
+
+#endif
