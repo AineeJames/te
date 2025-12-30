@@ -1,11 +1,13 @@
 #include "renderer.h"
 #include "globals.h"
+#include "grid.h"
 #include <assert.h>
+#include <raylib.h>
 #include <stdlib.h>
 
 void render_frame(Engine *engine) {
-  int dx = engine->renderer->atlas.glyph_w;
-  int dy = engine->renderer->atlas.glyph_h;
+  UnloadTexture(engine->renderer->grid_texture);
+  engine->renderer->grid_texture = grid_render_texture(engine->grid);
 
   BeginDrawing();
   {
@@ -33,7 +35,7 @@ Renderer *renderer_init(Engine *engine) {
   assert(renderer);
 
   renderer->atlas = (GlyphAtlas){
-      .texture = LoadTexture("assets/images/Mx437_IBM_BIOS_16px.png"),
+      .texture = LoadTexture("assets/images/MxPlus_IBM_BIOS_8px.png"),
       .glyph_w = GLYPH_W,
       .glyph_h = GLYPH_H};
 

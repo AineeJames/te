@@ -1,2 +1,8 @@
-te: src/main.c
-	cc -o te src/main.c src/grid.c src/renderer.c src/engine.c -I/usr/include/lua5.4 -lraylib -llua5.4
+CC := cc
+TARGET := te
+SRCS := $(wildcard src/*.c)
+CFLAGS := $(shell pkg-config --cflags lua raylib)
+LIBS := $(shell pkg-config --libs lua raylib)
+
+$(TARGET): $(SRCS)
+	cc -o $(TARGET) $(SRCS) $(CFLAGS) $(LIBS)

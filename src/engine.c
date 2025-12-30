@@ -5,6 +5,7 @@
 #include "lualib.h"
 #include "renderer.h"
 #include <assert.h>
+#include <raylib.h>
 #include <stdlib.h>
 
 Engine *engine_init(const char *game_path) {
@@ -19,6 +20,7 @@ Engine *engine_init(const char *game_path) {
   assert(engine->L);
   luaL_openlibs(engine->L);
 
+  SetTraceLogLevel(LOG_NONE);
   InitWindow(0, 0, "te");
   SetWindowMonitor(0);
   ToggleFullscreen();
