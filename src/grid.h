@@ -1,12 +1,16 @@
 #ifndef GRID_H_
 #define GRID_H_
 
+#include "colors.h"
 #include "raylib.h"
 #include <stddef.h>
 
 typedef struct {
   unsigned char glyph, fg, bg;
 } Cell;
+
+#define CELL_EMPTY                                                             \
+  (Cell) { .glyph = 0, .fg = VGA_BLACK, .bg = VGA_BLACK }
 
 typedef struct {
   size_t w, h;

@@ -1,6 +1,7 @@
 #ifndef RENDERER_H_
 #define RENDERER_H_
 
+#include "colors.h"
 #include "engine.h"
 #include <raylib.h>
 #include <stddef.h>
@@ -24,6 +25,9 @@ struct Renderer {
   GridShader grid_shader;
   Texture dummy;
   Texture grid_texture;
+
+  VGA_Color fg;
+  VGA_Color bg;
 };
 
 Renderer *renderer_init(Engine *engine);

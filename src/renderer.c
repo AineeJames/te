@@ -1,4 +1,5 @@
 #include "renderer.h"
+#include "colors.h"
 #include "globals.h"
 #include "grid.h"
 #include <assert.h>
@@ -35,7 +36,7 @@ Renderer *renderer_init(Engine *engine) {
   assert(renderer);
 
   renderer->atlas = (GlyphAtlas){
-      .texture = LoadTexture("assets/images/MxPlus_IBM_BIOS_8px.png"),
+      .texture = LoadTexture("assets/images/Mx437_IBM_BIOS_16px.png"),
       .glyph_w = GLYPH_W,
       .glyph_h = GLYPH_H};
 
@@ -56,6 +57,9 @@ Renderer *renderer_init(Engine *engine) {
   Image img = GenImageColor(GetScreenWidth(), GetScreenHeight(), WHITE);
   renderer->dummy = LoadTextureFromImage(img);
   UnloadImage(img);
+
+  renderer->fg = VGA_WHITE;
+  renderer->bg = VGA_BLACK;
 
   return renderer;
 }
