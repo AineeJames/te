@@ -18,5 +18,6 @@ void grid_set(Grid *grid, size_t x, size_t y, Cell cell);
 void grid_fill(Grid *grid, Cell cell);
 Texture grid_render_texture(Grid *grid);
 void grid_free(Grid *grid);
+void grid_print(Grid *grid, size_t x, size_t y, const char *text);
 
 #endif // GRID_H_

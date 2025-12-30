@@ -1,6 +1,7 @@
 #include "grid.h"
 #include <assert.h>
 #include <stdlib.h>
+#include <string.h>
 
 Grid *grid_init(int w, int h) {
   Grid *grid = malloc(sizeof(Grid) + (w * h * sizeof(Cell)));
@@ -47,3 +48,50 @@ Texture grid_render_texture(Grid *grid) {
 }
 
 void grid_free(Grid *grid) { free(grid); }
+
+void grid_print(Grid *grid, size_t x, size_t y, const char *text) {
+  size_t cx = x;
+  size_t cy = y;
+
+  for (size_t i = 0; text[i] != '\0'; i++) {
+    char c = text[i];
+
+    switch (c) {
+    case '\n': // Newline
+      cx = x;
+      cy++;
+      break;
+
+    case '\r': // Carriage return
+      cx = x;
+      break;
+
+    case '\t': { // Tab (4-space aligned)
+      const size_t TAB_WIDTH = 4;
+      size_t next_tab = ((cx / TAB_WIDTH) + 1) * TAB_WIDTH;
+      cx = next_tab;
+      break;
+    }
+
+    case '\b': // Backspace
+      if (cx > x)
+        cx--;
+      break;
+
+    default:
+      if (cx < grid->w && cy < grid->h) {
+        grid_set(grid, cx, cy,
+                 (Cell){
+                     .glyph = (unsigned char)c,
+                     .fg = 15,
+                     .bg = 0,
+                 });
+      }
+      cx++;
+      break;
+    }
+
+    if (cy >= grid->h)
+      break;
+  }
+}
