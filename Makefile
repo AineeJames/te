@@ -1,8 +1,24 @@
+# Compiler
 CC := cc
 TARGET := te
-SRCS := $(wildcard src/*.c)
-CFLAGS := $(shell pkg-config --cflags lua raylib)
+
+# Find all .c files recursively
+SRCS := $(shell find src -name '*.c')
+
+# Default flags (debug)
+CFLAGS := $(shell pkg-config --cflags lua raylib) -g
 LIBS := $(shell pkg-config --libs lua raylib) -lm
 
-$(TARGET): $(SRCS)
-	cc -o $(TARGET) $(SRCS) $(CFLAGS) $(LIBS)
+# Default target (debug)
+all: $(TARGET)
+
+# Release build (optimized)
+build: CFLAGS += -O2
+build: $(TARGET)
+
+$(TARGET):
+	$(CC) -o $(TARGET) $(SRCS) $(CFLAGS) $(LIBS)
+
+clean:
+	rm -f $(TARGET)
+

@@ -1,6 +1,7 @@
 #include "engine.h"
 #include "globals.h"
 #include "grid.h"
+#include "input/keystring.h"
 #include "lauxlib.h"
 #include "lua.h"
 #include "lua_api.h"
@@ -25,11 +26,9 @@ Engine *engine_init(const char *game_path) {
   register_lua_api(engine);
 
   SetTraceLogLevel(LOG_NONE);
-  SetConfigFlags(FLAG_VSYNC_HINT | FLAG_MSAA_4X_HINT);
   InitWindow(0, 0, "te");
   SetWindowMonitor(0);
   ToggleFullscreen();
-  SetTargetFPS(60);
 
   int sw = GetScreenWidth();
   int sh = GetScreenHeight();
@@ -62,101 +61,9 @@ Engine *engine_init(const char *game_path) {
   return engine;
 }
 
-static const char *keycode_to_string(int key) {
-  static char
-      buf[8]; // temporary buffer for function keys or other generated strings
-
-  // letters
-  if (key >= KEY_A && key <= KEY_Z) {
-    buf[0] = (char)('a' + (key - KEY_A));
-    buf[1] = 0;
-    return buf;
-  }
-  // numbers
-  if (key >= KEY_ZERO && key <= KEY_NINE) {
-    buf[0] = (char)('0' + (key - KEY_ZERO));
-    buf[1] = 0;
-    return buf;
-  }
-  // function keys
-  if (key >= KEY_F1 && key <= KEY_F12) {
-    snprintf(buf, sizeof(buf), "f%d", key - KEY_F1 + 1);
-    return buf;
-  }
-  // arrows
-  switch (key) {
-  case KEY_RIGHT:
-    return "right";
-  case KEY_LEFT:
-    return "left";
-  case KEY_UP:
-    return "up";
-  case KEY_DOWN:
-    return "down";
-  case KEY_SPACE:
-    return "space";
-  case KEY_ENTER:
-    return "enter";
-  case KEY_TAB:
-    return "tab";
-  case KEY_BACKSPACE:
-    return "backspace";
-  case KEY_DELETE:
-    return "delete";
-  case KEY_LEFT_SHIFT:
-  case KEY_RIGHT_SHIFT:
-    return "shift";
-  case KEY_LEFT_CONTROL:
-  case KEY_RIGHT_CONTROL:
-    return "ctrl";
-  case KEY_LEFT_ALT:
-  case KEY_RIGHT_ALT:
-    return "alt";
-  case KEY_LEFT_SUPER:
-  case KEY_RIGHT_SUPER:
-    return "super";
-  case KEY_CAPS_LOCK:
-    return "capslock";
-  case KEY_NUM_LOCK:
-    return "numlock";
-  case KEY_SCROLL_LOCK:
-    return "scrolllock";
-  case KEY_PAUSE:
-    return "pause";
-  // punctuation / symbols
-  case KEY_COMMA:
-    return ",";
-  case KEY_PERIOD:
-    return ".";
-  case KEY_SEMICOLON:
-    return ";";
-  case KEY_APOSTROPHE:
-    return "'";
-  case KEY_SLASH:
-    return "/";
-  case KEY_BACKSLASH:
-    return "\\";
-  case KEY_MINUS:
-    return "-";
-  case KEY_EQUAL:
-    return "=";
-  case KEY_LEFT_BRACKET:
-    return "[";
-  case KEY_RIGHT_BRACKET:
-    return "]";
-  case KEY_GRAVE:
-    return "`";
-  default:
-    return NULL; // unhandled key
-  }
-}
-
 void handle_all_keypresses(Engine *engine) {
-  if (IsKeyPressed(KEY_ESCAPE)) {
-    engine->running = false;
-  }
-
   int key;
+
   while ((key = GetKeyPressed()) != 0) {
     const char *keyStr = keycode_to_string(key);
     if (keyStr != NULL) {
@@ -172,9 +79,6 @@ int engine_run(Engine *engine) {
     float dt = GetFrameTime();
 
     /* --- Input --- */
-    if (IsKeyPressed(KEY_ESCAPE)) {
-      engine->running = false;
-    }
     handle_all_keypresses(engine);
 
     /* --- Update --- */

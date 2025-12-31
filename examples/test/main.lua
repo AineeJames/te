@@ -26,6 +26,13 @@ function te.update(dt)
 	end
 end
 
+function te.keypressed(key)
+    if key == "escape" then
+        te.event.quit(0) -- exit with 0 exit code
+    end
+end
+
+
 function te.draw()
 	te.graphics.clear()
 

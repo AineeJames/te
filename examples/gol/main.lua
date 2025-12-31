@@ -90,6 +90,8 @@ function te.keypressed(key)
     elseif key == "down" then
         -- decrease speed by increasing interval
         updateInterval = updateInterval * 1.25
+    elseif key == "escape" then
+        te.event.quit(0) -- exit with 0 exit code
     end
 end
 
@@ -125,5 +127,8 @@ function te.draw()
     te.graphics.print("Space = Pause/Resume | R = Reset", 1, 1)
     te.graphics.print(string.format("Running: %s", running and "Yes" or "No"), 1, 2)
     te.graphics.print(string.format("Speed: %.2f steps/sec", 1 / updateInterval), 1, 3)
+
+    local fpsStr = string.format("FPS: %d", te.window.getFPS())
+    te.graphics.print(fpsStr, w-#fpsStr+1, 1);
 end
 
