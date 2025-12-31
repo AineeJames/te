@@ -25,8 +25,6 @@ void render_frame(Engine *engine) {
       DrawTexture(engine->renderer->dummy, 0, 0, WHITE);
     }
     EndShaderMode();
-
-    DrawFPS(0, 0);
   }
   EndDrawing();
 }
