@@ -254,3 +254,24 @@ void call_draw(lua_State *L) {
 
   lua_pop(L, 1); // pop te table
 }
+
+void call_keypressed(lua_State *L, const char *key) {
+  lua_getglobal(L, "te");
+  lua_getfield(L, -1, "keypressed");
+  if (!lua_isfunction(L, -1)) {
+    lua_pop(L, 2);
+    slog(ERROR, "te.keypressed not found!");
+    return;
+  }
+
+  // Push arguments
+  lua_pushstring(L, key);
+
+  // Call with 1 arg, 0 return values
+  if (lua_pcall(L, 1, 0, 0) != LUA_OK) {
+    slog(ERROR, "failed calling te.keypressed: %s", lua_tostring(L, -1));
+    lua_pop(L, 1);
+  }
+
+  lua_pop(L, 1); // pop te table
+}
