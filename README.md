@@ -6,3 +6,5 @@ A simple game enginine that mimics a terminal.
 
 - Sound support
 - exit codes
+- set custom palettes
+- use custom codepage
