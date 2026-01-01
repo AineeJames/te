@@ -25,7 +25,7 @@ Engine *engine_init(const char *game_path) {
   luaL_openlibs(engine->L);
   register_lua_api(engine);
 
-  SetTraceLogLevel(LOG_NONE);
+  /* SetTraceLogLevel(LOG_NONE); */
   InitWindow(0, 0, "te");
   SetWindowMonitor(0);
   ToggleFullscreen();

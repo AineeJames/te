@@ -219,7 +219,6 @@ void call_load(lua_State *L) {
   lua_getfield(L, -1, "load");
   if (!lua_isfunction(L, -1)) {
     lua_pop(L, 2);
-    slog(ERROR, "te.load not found!");
     return;
   }
 
@@ -237,7 +236,6 @@ void call_update(lua_State *L, double dt) {
   lua_getfield(L, -1, "update");
   if (!lua_isfunction(L, -1)) {
     lua_pop(L, 2);
-    slog(ERROR, "te.update not found!");
     return;
   }
 
@@ -258,7 +256,6 @@ void call_draw(lua_State *L) {
   lua_getfield(L, -1, "draw");
   if (!lua_isfunction(L, -1)) {
     lua_pop(L, 2);
-    slog(ERROR, "te.draw not found!");
     return;
   }
 
@@ -275,7 +272,6 @@ void call_keypressed(lua_State *L, const char *key) {
   lua_getfield(L, -1, "keypressed");
   if (!lua_isfunction(L, -1)) {
     lua_pop(L, 2);
-    slog(ERROR, "te.keypressed not found!");
     return;
   }
 

@@ -1,2 +1,4 @@
 te
 .clangd
+build/
+src/generated/*
