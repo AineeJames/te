@@ -24,6 +24,7 @@ void init_engine_lua_script(Engine *engine) {
   }
 
   call_load(engine->L);
+  slog(INFO, "Initialized load of lua script");
 }
 
 #define EVENT_SIZE (sizeof(struct inotify_event))
