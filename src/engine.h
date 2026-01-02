@@ -14,6 +14,7 @@ typedef struct {
   lua_State *L;
   Renderer *renderer;
   Grid *grid;
+  int watch_handle;
 } Engine;
 
 Engine *engine_init(const char *game_path);
