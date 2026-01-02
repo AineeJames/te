@@ -54,11 +54,11 @@ void init_lua_file_watch(Engine *engine) {
 }
 
 bool poll_lua_file_change(Engine *engine) {
-  char buffer[BUF_LEN] = {0};
-  assert(engine->watch_handle != 0);
   bool change = false;
 
 #ifdef __linux__
+  char buffer[BUF_LEN] = {0};
+  assert(engine->watch_handle != 0);
   int length = read(engine->watch_handle, buffer, BUF_LEN);
 
   int i = 0;
