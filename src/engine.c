@@ -125,13 +125,6 @@ Engine *engine_init(const char *game_path) {
 
   init_engine_lua_script(engine);
 
-  /*
-  const char *main_path = TextFormat("%s/main.lua", engine->game_path);
-  if (luaL_dofile(engine->L, main_path) != LUA_OK) {
-    slog(FATAL, "Failed to load main.lua: %s", lua_tostring(engine->L, -1));
-  }
-  */
-
   engine->renderer = renderer_init(engine);
 
   int cell_size[2] = {engine->renderer->atlas.glyph_w,
