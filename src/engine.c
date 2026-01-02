@@ -44,7 +44,6 @@ void init_lua_file_watch(Engine *engine) {
 #ifdef __linux__
   int inotifyFd = inotify_init(); /* Create inotify instance */
   assert(inotifyFd != -1 && "inotify init failed");
-  int wd;
   // TODO go through lua script path and add all lua files
   int flags = fcntl(inotifyFd, F_GETFL, 0);
   fcntl(inotifyFd, F_SETFL, flags | O_NONBLOCK);

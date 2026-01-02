@@ -6,7 +6,9 @@ TARGET := te
 SRCS := $(shell find src -name '*.c')
 
 # Default flags (debug)
-CFLAGS := $(shell pkg-config --cflags lua raylib) -g
+CFLAGS := $(shell pkg-config --cflags lua raylib) -g -Wall -Wno-unused-parameter \
+	-Wno-unused-function -Wno-sign-conversion -Wswitch-enum 
+
 LIBS := $(shell pkg-config --libs lua raylib) -lm
 
 # Default target (debug)
