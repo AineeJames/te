@@ -1,6 +1,7 @@
 #include "lua_api.h"
 #include "colors.h"
 #include "grid.h"
+#include "input/keystring.h"
 #include "lauxlib.h"
 #include "lua.h"
 #include "renderer.h"
@@ -122,29 +123,35 @@ static int l_getFPS(lua_State *L) {
 
 // te.keyboard.isDown(key)
 static int l_isDown(lua_State *L) {
-  const char *key = luaL_checkstring(L, 1);
+  const char *key_str = luaL_checkstring(L, 1);
+
+  int keycode = string_to_keycode(key_str);
+  bool pressed = false;
+
+  if (keycode != KEY_NULL) {
+    pressed = IsKeyDown(keycode);
+  } else {
+    slog(WARNING, "Unknown key: %s", key_str);
+  }
+
+  lua_pushboolean(L, pressed);
+
+  return 1;
+}
+
+// te.event.quit(exit_code)
+static int l_quit(lua_State *L) {
+  int exit_code = luaL_checkinteger(L, 1);
 
   lua_getglobal(L, "te");
   lua_getfield(L, -1, "__engine");
   Engine *engine = (Engine *)lua_touserdata(L, -1);
   lua_pop(L, 2); // pop te.__engine
 
-  bool pressed = false;
-  if (strcmp(key, "left") == 0) {
-    pressed = IsKeyDown(KEY_LEFT);
-  } else if (strcmp(key, "right") == 0) {
-    pressed = IsKeyDown(KEY_RIGHT);
-  } else if (strcmp(key, "up") == 0) {
-    pressed = IsKeyDown(KEY_UP);
-  } else if (strcmp(key, "down") == 0) {
-    pressed = IsKeyDown(KEY_DOWN);
-  } else {
-    slog(WARNING, "Unknown key: %s", key);
-  }
+  engine->exit_code = exit_code;
+  engine->running = false;
 
-  lua_pushboolean(L, pressed);
-
-  return 1;
+  return 0;
 }
 
 void register_lua_api(Engine *engine) {
@@ -190,8 +197,16 @@ void register_lua_api(Engine *engine) {
   lua_setfield(L, -2, "isDown");
   lua_setfield(L, -2, "keyboard");
 
+  // te.event = {}
+  lua_newtable(L);
+  // te.event.quit(exit_code)
+  lua_pushcfunction(L, l_quit);
+  lua_setfield(L, -2, "quit");
+  lua_setfield(L, -2, "event");
+
   lua_setglobal(L, "te");
 
+  // Define globals
 #define X(name)                                                                \
   lua_pushinteger(L, VGA_##name);                                              \
   lua_setglobal(L, #name);
