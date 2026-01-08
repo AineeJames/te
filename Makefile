@@ -16,7 +16,7 @@ all: $(TARGET)
 build: CFLAGS += -O2
 build: $(TARGET)
 
-$(TARGET):
+$(TARGET): $(SRCS)
 	$(CC) -o $(TARGET) $(SRCS) $(CFLAGS) $(LIBS)
 
 clean:

@@ -12,11 +12,41 @@
 #include <raylib.h>
 #include <stdlib.h>
 
+static void slog_engine_handler(Slog_Record *record) {
+  Engine *engine = record->ctx;
+
+  printf("[te::");
+  switch (record->level) {
+  case SLOG_DEBUG:
+    printf("debug");
+    break;
+  case SLOG_INFO:
+    printf("info");
+    break;
+  case SLOG_WARNING:
+    printf("warn");
+    break;
+  case SLOG_ERROR:
+    printf("error");
+    break;
+  case SLOG_FATAL:
+    printf("fatal");
+    engine->exit_code = 1;
+    engine->running = false;
+    break;
+  }
+
+  printf("] ");
+  vprintf(record->fmt, record->args);
+  printf("\n");
+}
+
 Engine *engine_init(const char *game_path) {
   Engine *engine = malloc(sizeof(Engine));
   assert(engine);
+  slog_set_handler(slog_engine_handler, .ctx = engine);
 
-  engine->running = false;
+  engine->running = true;
   engine->exit_code = 0;
   engine->game_path = game_path;
 
@@ -40,7 +70,8 @@ Engine *engine_init(const char *game_path) {
 
   const char *main_path = TextFormat("%s/main.lua", engine->game_path);
   if (luaL_dofile(engine->L, main_path) != LUA_OK) {
-    slog(FATAL, "Failed to load main.lua: %s", lua_tostring(engine->L, -1));
+    fatal("Failed to load main.lua: %s", lua_tostring(engine->L, -1));
+    return engine;
   }
 
   call_load(engine->L);
@@ -58,6 +89,7 @@ Engine *engine_init(const char *game_path) {
                  engine->renderer->grid_shader.gridSizeLoc, grid_size,
                  SHADER_UNIFORM_IVEC2);
 
+  info("Initialized te successfully!");
   return engine;
 }
 
@@ -73,8 +105,6 @@ void handle_all_keypresses(Engine *engine) {
 }
 
 int engine_run(Engine *engine) {
-  engine->running = true;
-
   while (engine->running) {
     float dt = GetFrameTime();
 
@@ -94,9 +124,12 @@ int engine_run(Engine *engine) {
 }
 
 void engine_free(Engine *engine) {
-  lua_close(engine->L);
-  renderer_free(engine->renderer);
-  grid_free(engine->grid);
+  if (engine->L)
+    lua_close(engine->L);
+  if (engine->renderer)
+    renderer_free(engine->renderer);
+  if (engine->grid)
+    grid_free(engine->grid);
   CloseWindow();
   free(engine);
 }

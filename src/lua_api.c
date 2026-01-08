@@ -131,7 +131,7 @@ static int l_isDown(lua_State *L) {
   if (keycode != KEY_NULL) {
     pressed = IsKeyDown(keycode);
   } else {
-    slog(WARNING, "Unknown key: %s", key_str);
+    warning("Unknown key: %s", key_str);
   }
 
   lua_pushboolean(L, pressed);
@@ -219,13 +219,13 @@ void call_load(lua_State *L) {
   lua_getfield(L, -1, "load");
   if (!lua_isfunction(L, -1)) {
     lua_pop(L, 2);
-    slog(ERROR, "te.load not found!");
+    error("te.load not found!");
     return;
   }
 
   // 0 args, 0 return values
   if (lua_pcall(L, 0, 0, 0) != LUA_OK) {
-    slog(ERROR, "failed calling te.load: %s", lua_tostring(L, -1));
+    error("failed calling te.load: %s", lua_tostring(L, -1));
     lua_pop(L, 1);
   }
 
@@ -237,7 +237,7 @@ void call_update(lua_State *L, double dt) {
   lua_getfield(L, -1, "update");
   if (!lua_isfunction(L, -1)) {
     lua_pop(L, 2);
-    slog(ERROR, "te.update not found!");
+    error("te.update not found!");
     return;
   }
 
@@ -246,7 +246,7 @@ void call_update(lua_State *L, double dt) {
 
   // Call with 1 arg, 0 return values
   if (lua_pcall(L, 1, 0, 0) != LUA_OK) {
-    slog(ERROR, "failed calling te.update: %s", lua_tostring(L, -1));
+    error("failed calling te.update: %s", lua_tostring(L, -1));
     lua_pop(L, 1);
   }
 
@@ -258,12 +258,12 @@ void call_draw(lua_State *L) {
   lua_getfield(L, -1, "draw");
   if (!lua_isfunction(L, -1)) {
     lua_pop(L, 2);
-    slog(ERROR, "te.draw not found!");
+    error("te.draw not found!");
     return;
   }
 
   if (lua_pcall(L, 0, 0, 0) != LUA_OK) {
-    slog(ERROR, "failed calling te.draw: %s", lua_tostring(L, -1));
+    error("failed calling te.draw: %s", lua_tostring(L, -1));
     lua_pop(L, 1);
   }
 
@@ -275,7 +275,6 @@ void call_keypressed(lua_State *L, const char *key) {
   lua_getfield(L, -1, "keypressed");
   if (!lua_isfunction(L, -1)) {
     lua_pop(L, 2);
-    slog(ERROR, "te.keypressed not found!");
     return;
   }
 
@@ -284,7 +283,7 @@ void call_keypressed(lua_State *L, const char *key) {
 
   // Call with 1 arg, 0 return values
   if (lua_pcall(L, 1, 0, 0) != LUA_OK) {
-    slog(ERROR, "failed calling te.keypressed: %s", lua_tostring(L, -1));
+    error("failed calling te.keypressed: %s", lua_tostring(L, -1));
     lua_pop(L, 1);
   }
 
