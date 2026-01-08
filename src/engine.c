@@ -42,6 +42,7 @@ Engine *engine_init(const char *game_path) {
   engine->running = true;
   engine->exit_code = 0;
   engine->game_path = game_path;
+  engine->stream_count = 0;
 
   engine->L = luaL_newstate();
   assert(engine->L);
@@ -50,6 +51,7 @@ Engine *engine_init(const char *game_path) {
 
   SetTraceLogCallback(CustomTraceLog);
   InitWindow(0, 0, "te");
+  InitAudioDevice();
   SetWindowMonitor(0);
   ToggleFullscreen();
   SetTraceLogLevel(LOG_WARNING);
@@ -107,6 +109,11 @@ int engine_run(Engine *engine) {
 
     /* --- Update --- */
     call_update(engine->L, dt);
+
+    /* --- Update streaming audio --- */
+    for (int i = 0; i < engine->stream_count; i++) {
+      UpdateMusicStream(engine->streams[i]);
+    }
 
     /* --- Draw --- */
     call_draw(engine->L);

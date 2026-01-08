@@ -56,6 +56,16 @@ WHITE = 15
 ---@class te_keyboard
 ---@field isDown fun(key:Key):boolean
 
+---@class te_audio_source
+---@field play fun(source:te_audio_source):nil
+---@field stop fun(source:te_audio_source):nil
+---@field setVolume fun(source:te_audio_source, volume:number):nil
+
+---@alias SoundMode "static" | "stream"
+
+---@class te_audio
+---@field newSource fun(path:string, mode:SoundMode):te_audio_source
+
 -- Root te table
 ---@class te
 ---@field window te_window
@@ -63,6 +73,7 @@ WHITE = 15
 ---@field event te_event
 ---@field log te_log
 ---@field keyboard te_keyboard
+---@field audio te_audio
 -- Lifecycle hooks as fields instead of functions
 ---@field load fun():nil
 ---@field update fun(dt:number):nil

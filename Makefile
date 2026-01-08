@@ -6,7 +6,7 @@ TARGET := te
 SRCS := $(shell find src -name '*.c')
 
 # Default flags (debug)
-CFLAGS := $(shell pkg-config --cflags lua raylib) -g
+CFLAGS := $(shell pkg-config --cflags lua raylib) -g -Wall -Wextra
 LIBS := $(shell pkg-config --libs lua raylib) -lm
 
 # Default target (debug)
