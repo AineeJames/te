@@ -15,28 +15,49 @@
 static void slog_engine_handler(Slog_Record *record) {
   Engine *engine = record->ctx;
 
-  printf("[te::");
+  /* src:line (dim) */
+  printf(ANSI_DIM "%s:%d " ANSI_RESET, record->src.file, record->src.line);
+
+  /* [ (dim) */
+  printf(ANSI_DIM "[" ANSI_RESET);
+
+  /* te::LEVEL (colored) */
+  printf("te::");
+
+  const char *level_color = "";
+  const char *level_name = "";
+
   switch (record->level) {
   case SLOG_DEBUG:
-    printf("debug");
+    level_color = ANSI_CYAN;
+    level_name = "debug";
     break;
   case SLOG_INFO:
-    printf("info");
+    level_color = ANSI_GREEN;
+    level_name = "info";
     break;
   case SLOG_WARNING:
-    printf("warn");
+    level_color = ANSI_YELLOW;
+    level_name = "warn";
     break;
   case SLOG_ERROR:
-    printf("error");
+    level_color = ANSI_RED;
+    level_name = "error";
     break;
   case SLOG_FATAL:
-    printf("fatal");
+    level_color = ANSI_MAGENTA;
+    level_name = "fatal";
     engine->exit_code = 1;
     engine->running = false;
     break;
   }
 
-  printf("] ");
+  printf("%s%s%s", level_color, level_name, ANSI_RESET);
+
+  /* ] (dim) */
+  printf(ANSI_DIM "] " ANSI_RESET);
+
+  /* message (no color) */
   vprintf(record->fmt, record->args);
   printf("\n");
 }

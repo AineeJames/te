@@ -154,6 +154,33 @@ static int l_quit(lua_State *L) {
   return 0;
 }
 
+#define SLOG_LEVELS(X)                                                         \
+  X(debug, DEBUG)                                                              \
+  X(info, INFO)                                                                \
+  X(warning, WARNING)                                                          \
+  X(error, ERROR)                                                              \
+  X(fatal, FATAL)
+
+#define X(level, macro)                                                        \
+  static int l_log_##level(lua_State *L) {                                     \
+    const char *msg = luaL_checkstring(L, 1);                                  \
+                                                                               \
+    const char *file = "unknown";                                              \
+    int line = 0;                                                              \
+                                                                               \
+    lua_Debug ar;                                                              \
+    if (lua_getstack(L, 1, &ar)) {                                             \
+      lua_getinfo(L, "Sl", &ar);                                               \
+      file = ar.short_src;                                                     \
+      line = ar.currentline;                                                   \
+    }                                                                          \
+    slog(file, line, SLOG_##macro, "%s", msg);                                 \
+                                                                               \
+    return 0;                                                                  \
+  }
+SLOG_LEVELS(X)
+#undef X
+
 void register_lua_api(Engine *engine) {
   lua_State *L = engine->L;
 
@@ -203,6 +230,16 @@ void register_lua_api(Engine *engine) {
   lua_pushcfunction(L, l_quit);
   lua_setfield(L, -2, "quit");
   lua_setfield(L, -2, "event");
+
+  // te.log = {}
+  lua_newtable(L);
+  // te.log.debug(msg)
+#define X(level, _)                                                            \
+  lua_pushcfunction(L, l_log_##level);                                         \
+  lua_setfield(L, -2, #level);
+  SLOG_LEVELS(X)
+#undef X
+  lua_setfield(L, -2, "log");
 
   lua_setglobal(L, "te");
 

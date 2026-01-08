@@ -3,10 +3,22 @@
 
 -- Color enum
 ---@alias Color integer
-BLACK = 0; BLUE = 1; GREEN = 2; CYAN = 3; RED = 4
-MAGENTA = 5; BROWN = 6; LIGHT_GRAY = 7; DARK_GRAY = 8
-LIGHT_BLUE = 9; LIGHT_GREEN = 10; LIGHT_CYAN = 11
-LIGHT_RED = 12; LIGHT_MAGENTA = 13; YELLOW = 14; WHITE = 15
+BLACK = 0
+BLUE = 1
+GREEN = 2
+CYAN = 3
+RED = 4
+MAGENTA = 5
+BROWN = 6
+LIGHT_GRAY = 7
+DARK_GRAY = 8
+LIGHT_BLUE = 9
+LIGHT_GREEN = 10
+LIGHT_CYAN = 11
+LIGHT_RED = 12
+LIGHT_MAGENTA = 13
+YELLOW = 14
+WHITE = 15
 
 -- Key enum
 ---@alias Key
@@ -33,11 +45,19 @@ LIGHT_RED = 12; LIGHT_MAGENTA = 13; YELLOW = 14; WHITE = 15
 ---@class te_event
 ---@field quit fun(exitCode:integer):nil
 
+---@class te_log
+---@field debug fun(msg:string):nil
+---@field info fun(msg:string):nil
+---@field warning fun(msg:string):nil
+---@field error fun(msg:string):nil
+---@field fatal fun(msg:string):nil
+
 -- Root te table
 ---@class te
 ---@field window te_window
 ---@field graphics te_graphics
 ---@field event te_event
+---@field log te_log
 -- Lifecycle hooks as fields instead of functions
 ---@field load fun():nil
 ---@field update fun(dt:number):nil
