@@ -12,60 +12,32 @@
 #include <raylib.h>
 #include <stdlib.h>
 
-static void slog_engine_handler(Slog_Record *record) {
-  Engine *engine = record->ctx;
+static void CustomTraceLog(int msgType, const char *text, va_list args) {
+  char buf[1024];
+  vsnprintf(buf, sizeof buf, text, args);
 
-  /* src:line (dim) */
-  printf(ANSI_DIM "%s:%d " ANSI_RESET, record->src.file, record->src.line);
-
-  /* [ (dim) */
-  printf(ANSI_DIM "[" ANSI_RESET);
-
-  /* te::LEVEL (colored) */
-  printf("te::");
-
-  const char *level_color = "";
-  const char *level_name = "";
-
-  switch (record->level) {
-  case SLOG_DEBUG:
-    level_color = ANSI_CYAN;
-    level_name = "debug";
+  switch (msgType) {
+  case LOG_INFO:
+    info("raylib: %s", buf);
     break;
-  case SLOG_INFO:
-    level_color = ANSI_GREEN;
-    level_name = "info";
+  case LOG_ERROR:
+    error("raylib: %s", buf);
     break;
-  case SLOG_WARNING:
-    level_color = ANSI_YELLOW;
-    level_name = "warn";
+  case LOG_WARNING:
+    warning("raylib: %s", buf);
     break;
-  case SLOG_ERROR:
-    level_color = ANSI_RED;
-    level_name = "error";
+  case LOG_DEBUG:
+    debug("raylib: %s", buf);
     break;
-  case SLOG_FATAL:
-    level_color = ANSI_MAGENTA;
-    level_name = "fatal";
-    engine->exit_code = 1;
-    engine->running = false;
+  case LOG_FATAL:
+    fatal("raylib: %s", buf);
     break;
   }
-
-  printf("%s%s%s", level_color, level_name, ANSI_RESET);
-
-  /* ] (dim) */
-  printf(ANSI_DIM "] " ANSI_RESET);
-
-  /* message (no color) */
-  vprintf(record->fmt, record->args);
-  printf("\n");
 }
 
 Engine *engine_init(const char *game_path) {
   Engine *engine = malloc(sizeof(Engine));
   assert(engine);
-  slog_set_handler(slog_engine_handler, .ctx = engine);
 
   engine->running = true;
   engine->exit_code = 0;
@@ -76,10 +48,11 @@ Engine *engine_init(const char *game_path) {
   luaL_openlibs(engine->L);
   register_lua_api(engine);
 
-  SetTraceLogLevel(LOG_NONE);
+  SetTraceLogCallback(CustomTraceLog);
   InitWindow(0, 0, "te");
   SetWindowMonitor(0);
   ToggleFullscreen();
+  SetTraceLogLevel(LOG_WARNING);
 
   int sw = GetScreenWidth();
   int sh = GetScreenHeight();
