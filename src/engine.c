@@ -18,19 +18,19 @@ static void CustomTraceLog(int msgType, const char *text, va_list args) {
 
   switch (msgType) {
   case LOG_INFO:
-    info("raylib: %s", buf);
+    info("%s", buf);
     break;
   case LOG_ERROR:
-    error("raylib: %s", buf);
+    error("%s", buf);
     break;
   case LOG_WARNING:
-    warning("raylib: %s", buf);
+    warning("%s", buf);
     break;
   case LOG_DEBUG:
-    debug("raylib: %s", buf);
+    debug("%s", buf);
     break;
   case LOG_FATAL:
-    fatal("raylib: %s", buf);
+    fatal("%s", buf);
     break;
   }
 }
