@@ -4,6 +4,7 @@ local nextGrid = {}
 local timer = 0
 local updateInterval = 0.01 -- seconds per step
 local running = true
+local music
 
 -- helper function to create empty grid
 local function createGrid()
@@ -19,6 +20,9 @@ end
 
 -- initialize
 function te.load()
+	music = te.audio.newSource("music.wav", "stream")
+	music:play()
+
 	w, h = te.window.getDimensions()
 	grid = createGrid()
 	nextGrid = createGrid()
