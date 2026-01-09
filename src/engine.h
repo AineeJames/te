@@ -16,6 +16,7 @@ typedef struct {
   lua_State *L;
   Renderer *renderer;
   Grid *grid;
+  int watch_handle;
 
   Music streams[ENGINE_MAX_STREAMS];
   int stream_count;
