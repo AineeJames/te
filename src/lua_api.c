@@ -131,7 +131,7 @@ static int l_isDown(lua_State *L) {
   if (keycode != KEY_NULL) {
     pressed = IsKeyDown(keycode);
   } else {
-    slog(WARNING, "Unknown key: %s", key_str);
+    warning("Unknown key: %s", key_str);
   }
 
   lua_pushboolean(L, pressed);
@@ -154,77 +154,245 @@ static int l_quit(lua_State *L) {
   return 0;
 }
 
+#define SLOG_LEVELS(X)                                                         \
+  X(debug, DEBUG)                                                              \
+  X(info, INFO)                                                                \
+  X(warning, WARNING)                                                          \
+  X(error, ERROR)                                                              \
+  X(fatal, FATAL)
+
+static lua_Debug get_lua_src_loc(lua_State *L) {
+  lua_Debug ar;
+  if (lua_getstack(L, 1, &ar)) {
+    lua_getinfo(L, "Sl", &ar);
+  }
+  return ar;
+}
+
+#define X(level, macro)                                                        \
+  static int l_log_##level(lua_State *L) {                                     \
+    const char *msg = luaL_checkstring(L, 1);                                  \
+                                                                               \
+    const char *file = "unknown";                                              \
+    int line = 0;                                                              \
+                                                                               \
+    lua_Debug ar = get_lua_src_loc(L);                                         \
+    slog(file, line, SLOG_##macro, "%s", msg);                                 \
+                                                                               \
+    return 0;                                                                  \
+  }
+SLOG_LEVELS(X)
+#undef X
+
+typedef struct {
+  bool is_stream;
+  union {
+    Sound sound;
+    Music music;
+  } as;
+  Sound sound; // or Music for streaming
+} LuaAudioSource;
+
+int l_newSource(lua_State *L) {
+  const char *filename = luaL_checkstring(L, 1);
+  const char *mode = luaL_checkstring(L, 2);
+
+  lua_getglobal(L, "te");
+  lua_getfield(L, -1, "__engine");
+  Engine *engine = (Engine *)lua_touserdata(L, -1);
+  lua_pop(L, 2); // pop te.__engine
+
+  filename = TextFormat("%s/%s", engine->game_path, filename);
+  info("Loading sound: %s", filename);
+
+  LuaAudioSource *src = lua_newuserdata(L, sizeof(LuaAudioSource));
+  if (!src)
+    return luaL_error(L, "Failed to allocate sound source");
+
+  if (!FileExists(filename)) {
+    return luaL_error(L, "File not found");
+  }
+
+  // Set its metatable for methods
+  luaL_getmetatable(L, "TeSoundSource");
+  lua_setmetatable(L, -2);
+
+  if (TextIsEqual(mode, "stream")) {
+    src->is_stream = true;
+    src->as.music = LoadMusicStream(filename);
+    if (!IsMusicValid(src->as.music))
+      return luaL_error(L, "Failed to load stream");
+
+    engine->streams[engine->stream_count++] = src->as.music;
+    if (engine->stream_count < ENGINE_MAX_STREAMS) {
+      engine->streams[engine->stream_count++] = src->as.music;
+    } else {
+      warning("Too many streams, ignoring additional ones");
+    }
+
+  } else {
+    src->is_stream = false;
+    src->as.sound = LoadSound(filename);
+    if (!IsSoundValid(src->as.sound))
+      return luaL_error(L, "Failed to load sound");
+  }
+
+  return 1; // userdata on top of stack
+}
+
+static int l_sound_play(lua_State *L) {
+  LuaAudioSource *src = luaL_checkudata(L, 1, "TeSoundSource");
+
+  if (src->is_stream) {
+    PlayMusicStream(src->as.music);
+  } else {
+    PlaySound(src->as.sound);
+  }
+  return 0;
+}
+
+static int l_sound_stop(lua_State *L) {
+  LuaAudioSource *src = luaL_checkudata(L, 1, "TeSoundSource");
+
+  if (src->is_stream) {
+    StopMusicStream(src->as.music);
+  } else {
+    StopSound(src->as.sound);
+  }
+  return 0;
+}
+
+static int l_sound_set_volume(lua_State *L) {
+  LuaAudioSource *src = luaL_checkudata(L, 1, "TeSoundSource");
+
+  float volume = luaL_checknumber(L, 2);
+  if (volume < 0.0f)
+    volume = 0.0f;
+  if (volume > 1.0f)
+    volume = 1.0f;
+
+  if (src->is_stream) {
+    SetMusicVolume(src->as.music, volume);
+  } else {
+    SetSoundVolume(src->as.sound, volume);
+  }
+
+  return 0;
+}
+
+// sound garbage collector
+static int l_sound_gc(lua_State *L) {
+  LuaAudioSource *src = luaL_checkudata(L, 1, "TeSoundSource");
+  if (src->is_stream) {
+    UnloadMusicStream(src->as.music);
+  } else {
+    UnloadSound(src->as.sound);
+  }
+
+  return 0;
+}
+
 void register_lua_api(Engine *engine) {
   lua_State *L = engine->L;
 
-  // te = {}
+  // ---- te table ----
   lua_newtable(L);
 
   // te.__engine = Engine*
   lua_pushlightuserdata(L, engine);
   lua_setfield(L, -2, "__engine");
 
-  // te.graphics = {}
+  // ---- te.graphics ----
   lua_newtable(L);
-  // te.graphics.setCell()
   lua_pushcfunction(L, l_setCell);
   lua_setfield(L, -2, "setCell");
-  // te.graphics.print()
   lua_pushcfunction(L, l_print);
   lua_setfield(L, -2, "print");
-  // te.graphics.clear()
   lua_pushcfunction(L, l_clear);
   lua_setfield(L, -2, "clear");
-  // te.graphics.setColor()
   lua_pushcfunction(L, l_setColor);
   lua_setfield(L, -2, "setColor");
   lua_setfield(L, -2, "graphics");
 
-  // te.window = {}
+  // ---- te.window ----
   lua_newtable(L);
-  // te.window.getDimensions()
   lua_pushcfunction(L, l_getDimensions);
   lua_setfield(L, -2, "getDimensions");
-  // te.window.getFPS()
   lua_pushcfunction(L, l_getFPS);
   lua_setfield(L, -2, "getFPS");
   lua_setfield(L, -2, "window");
 
-  // te.keyboard = {}
+  // ---- te.keyboard ----
   lua_newtable(L);
-  // te.window.getDimensions()
   lua_pushcfunction(L, l_isDown);
   lua_setfield(L, -2, "isDown");
   lua_setfield(L, -2, "keyboard");
 
-  // te.event = {}
+  // ---- te.event ----
   lua_newtable(L);
-  // te.event.quit(exit_code)
   lua_pushcfunction(L, l_quit);
   lua_setfield(L, -2, "quit");
   lua_setfield(L, -2, "event");
 
+  // ---- te.log ----
+  lua_newtable(L);
+#define X(level, _)                                                            \
+  lua_pushcfunction(L, l_log_##level);                                         \
+  lua_setfield(L, -2, #level);
+  SLOG_LEVELS(X)
+#undef X
+  lua_setfield(L, -2, "log");
+
+  // ---- te.audio ----
+  lua_newtable(L);
+  lua_pushcfunction(L, l_newSource);
+  lua_setfield(L, -2, "newSource");
+  lua_setfield(L, -2, "audio");
+
+  // ---- set te global ----
   lua_setglobal(L, "te");
 
-  // Define globals
+  // ---- SoundSource metatable ----
+  luaL_newmetatable(L, "TeSoundSource");
+
+  // methods
+  lua_pushcfunction(L, l_sound_play);
+  lua_setfield(L, -2, "play");
+  lua_pushcfunction(L, l_sound_stop);
+  lua_setfield(L, -2, "stop");
+  lua_pushcfunction(L, l_sound_set_volume);
+  lua_setfield(L, -2, "setVolume");
+
+  // __index
+  lua_pushvalue(L, -1);
+  lua_setfield(L, -2, "__index");
+
+  // __gc
+  lua_pushcfunction(L, l_sound_gc);
+  lua_setfield(L, -2, "__gc");
+
+  lua_pop(L, 1); // pop metatable
+
+  // ---- Define VGA color constants ----
 #define X(name)                                                                \
   lua_pushinteger(L, VGA_##name);                                              \
   lua_setglobal(L, #name);
   VGA_COLOR_LIST
 #undef X
-};
+}
 
 void call_load(lua_State *L) {
   lua_getglobal(L, "te");
   lua_getfield(L, -1, "load");
   if (!lua_isfunction(L, -1)) {
     lua_pop(L, 2);
+    error("te.load not found!");
     return;
   }
 
   // 0 args, 0 return values
   if (lua_pcall(L, 0, 0, 0) != LUA_OK) {
-    slog(ERROR, "failed calling te.load: %s", lua_tostring(L, -1));
+    error("failed calling te.load: %s", lua_tostring(L, -1));
     lua_pop(L, 1);
   }
 
@@ -236,6 +404,7 @@ void call_update(lua_State *L, double dt) {
   lua_getfield(L, -1, "update");
   if (!lua_isfunction(L, -1)) {
     lua_pop(L, 2);
+    error("te.update not found!");
     return;
   }
 
@@ -244,7 +413,7 @@ void call_update(lua_State *L, double dt) {
 
   // Call with 1 arg, 0 return values
   if (lua_pcall(L, 1, 0, 0) != LUA_OK) {
-    slog(ERROR, "failed calling te.update: %s", lua_tostring(L, -1));
+    error("failed calling te.update: %s", lua_tostring(L, -1));
     lua_pop(L, 1);
   }
 
@@ -256,11 +425,12 @@ void call_draw(lua_State *L) {
   lua_getfield(L, -1, "draw");
   if (!lua_isfunction(L, -1)) {
     lua_pop(L, 2);
+    error("te.draw not found!");
     return;
   }
 
   if (lua_pcall(L, 0, 0, 0) != LUA_OK) {
-    slog(ERROR, "failed calling te.draw: %s", lua_tostring(L, -1));
+    error("failed calling te.draw: %s", lua_tostring(L, -1));
     lua_pop(L, 1);
   }
 
@@ -280,7 +450,7 @@ void call_keypressed(lua_State *L, const char *key) {
 
   // Call with 1 arg, 0 return values
   if (lua_pcall(L, 1, 0, 0) != LUA_OK) {
-    slog(ERROR, "failed calling te.keypressed: %s", lua_tostring(L, -1));
+    error("failed calling te.keypressed: %s", lua_tostring(L, -1));
     lua_pop(L, 1);
   }
 

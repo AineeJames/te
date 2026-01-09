@@ -3,21 +3,34 @@
 
 -- Color enum
 ---@alias Color integer
-BLACK = 0; BLUE = 1; GREEN = 2; CYAN = 3; RED = 4
-MAGENTA = 5; BROWN = 6; LIGHT_GRAY = 7; DARK_GRAY = 8
-LIGHT_BLUE = 9; LIGHT_GREEN = 10; LIGHT_CYAN = 11
-LIGHT_RED = 12; LIGHT_MAGENTA = 13; YELLOW = 14; WHITE = 15
+BLACK = 0
+BLUE = 1
+GREEN = 2
+CYAN = 3
+RED = 4
+MAGENTA = 5
+BROWN = 6
+LIGHT_GRAY = 7
+DARK_GRAY = 8
+LIGHT_BLUE = 9
+LIGHT_GREEN = 10
+LIGHT_CYAN = 11
+LIGHT_RED = 12
+LIGHT_MAGENTA = 13
+YELLOW = 14
+WHITE = 15
 
 -- Key enum
 ---@alias Key
----| '"a"'|'"b"'|'"c"'|'"d"'|'"e"'|'"f"'|'"g"'
----| '"h"'|'"i"'|'"j"'|'"k"'|'"l"'|'"m"'|'"n"'
----| '"o"'|'"p"'|'"q"'|'"r"'|'"s"'|'"t"'
----| '"u"'|'"v"'|'"w"'|'"x"'|'"y"'|'"z"'
----| '"0"'|'"1"'|'"2"'|'"3"'|'"4"'|'"5"'|'"6"'|'"7"'|'"8"'|'"9"'
----| '"space"'|'"enter"'|'"escape"'|'"tab"'|'"backspace"'
----| '"left"'|'"right"'|'"up"'|'"down"'
----| '"f1"'|'"f2"'|'"f3"'|'"f4"'|'"f5"'|'"f6"'|'"f7"'|'"f8"'|'"f9"'|'"f10"'|'"f11"'|'"f12"'
+---| "a" | "b" | "c" | "d" | "e" | "f" | "g"
+---| "h" | "i" | "j" | "k" | "l" | "m" | "n"
+---| "o" | "p" | "q" | "r" | "s" | "t"
+---| "u" | "v" | "w" | "x" | "y" | "z"
+---| "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9"
+---| "space" | "enter" | "escape" | "tab" | "backspace"
+---| "left" | "right" | "up" | "down"
+---| "f1" | "f2" | "f3" | "f4" | "f5" | "f6"
+---| "f7" | "f8" | "f9" | "f10" | "f11" | "f12"
 
 -- Engine objects
 ---@class te_window
@@ -33,11 +46,34 @@ LIGHT_RED = 12; LIGHT_MAGENTA = 13; YELLOW = 14; WHITE = 15
 ---@class te_event
 ---@field quit fun(exitCode:integer):nil
 
+---@class te_log
+---@field debug fun(msg:string):nil
+---@field info fun(msg:string):nil
+---@field warning fun(msg:string):nil
+---@field error fun(msg:string):nil
+---@field fatal fun(msg:string):nil
+
+---@class te_keyboard
+---@field isDown fun(key:Key):boolean
+
+---@class te_audio_source
+---@field play fun(source:te_audio_source):nil
+---@field stop fun(source:te_audio_source):nil
+---@field setVolume fun(source:te_audio_source, volume:number):nil
+
+---@alias SoundMode "static" | "stream"
+
+---@class te_audio
+---@field newSource fun(path:string, mode:SoundMode):te_audio_source
+
 -- Root te table
 ---@class te
 ---@field window te_window
 ---@field graphics te_graphics
 ---@field event te_event
+---@field log te_log
+---@field keyboard te_keyboard
+---@field audio te_audio
 -- Lifecycle hooks as fields instead of functions
 ---@field load fun():nil
 ---@field update fun(dt:number):nil

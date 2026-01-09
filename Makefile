@@ -12,8 +12,8 @@ SRCS := $(shell find src -name '*.c')
 # Object files go in build/
 OBJS := $(patsubst src/%.c,$(BUILD_DIR)/%.o,$(SRCS))
 
-# Default flags
-CFLAGS := $(shell pkg-config --cflags lua raylib) -g
+# Default flags (debug)
+CFLAGS := $(shell pkg-config --cflags lua raylib) -g -Wall -Wextra
 LIBS := $(shell pkg-config --libs lua raylib) -lm
 
 # Default target
@@ -42,6 +42,9 @@ $(GENERATED_DIR)/%.h: $(ASSETS_DIR)/%
 
 # Ensure generated headers exist before compiling
 $(OBJS): $(GENERATED_HEADERS)
+
+$(TARGET): $(SRCS)
+	$(CC) -o $(TARGET) $(SRCS) $(CFLAGS) $(LIBS)
 
 clean:
 	rm -rf $(BUILD_DIR) $(GENERATED_DIR)
