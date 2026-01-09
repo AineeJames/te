@@ -15,16 +15,17 @@
 #ifdef __linux__
 #include <fcntl.h>
 #include <sys/inotify.h>
+#include <unistd.h>
 #endif
 
 void init_engine_lua_script(Engine *engine) {
   const char *main_path = TextFormat("%s/main.lua", engine->game_path);
   if (luaL_dofile(engine->L, main_path) != LUA_OK) {
-    slog(FATAL, "Failed to load main.lua: %s", lua_tostring(engine->L, -1));
+    fatal("Failed to load main.lua: %s", lua_tostring(engine->L, -1));
   }
 
   call_load(engine->L);
-  slog(INFO, "Initialized load of lua script");
+  info("Initialized load of lua script");
 }
 
 #define EVENT_SIZE (sizeof(struct inotify_event))
@@ -92,6 +93,8 @@ bool poll_lua_file_change(Engine *engine) {
 #endif
 
   return change;
+}
+
 static void CustomTraceLog(int msgType, const char *text, va_list args) {
   char buf[1024];
   vsnprintf(buf, sizeof buf, text, args);
