@@ -81,8 +81,6 @@ static void slog_engine_handler(Slog_Record *record) {
   printf("\n");
 }
 
-static bool init_new_game(const char *game_path) { return true; }
-
 int main(int argc, char *argv[]) {
   const char *prog_name = argv[0];
 
