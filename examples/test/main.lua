@@ -6,6 +6,7 @@ local speed
 
 function te.load()
 	w, h = te.window.getDimensions()
+	te.log.debug(string.format("width, height = %d, %d", w, h))
 	x = w / 2
 	y = h / 2
 	speed = 50
@@ -19,7 +20,7 @@ function te.update(dt)
 		x = x - speed * dt
 	end
 	if te.keyboard.isDown("up") then
-		y = y - speed * dt 
+		y = y - speed * dt
 	end
 	if te.keyboard.isDown("down") then
 		y = y + speed * dt
@@ -27,11 +28,11 @@ function te.update(dt)
 end
 
 function te.keypressed(key)
-    if key == "escape" then
-        te.event.quit(0) -- exit with 0 exit code
-    end
+	if key == "escape" then
+		te.log.info("Gracefully exiting!")
+		te.event.quit(0) -- exit with 0 exit code
+	end
 end
-
 
 function te.draw()
 	te.graphics.clear()

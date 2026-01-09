@@ -4,6 +4,8 @@
 #include "grid.h"
 #include "lua.h"
 
+#define ENGINE_MAX_STREAMS 5
+
 typedef struct Renderer Renderer;
 
 typedef struct {
@@ -15,6 +17,9 @@ typedef struct {
   Renderer *renderer;
   Grid *grid;
   int watch_handle;
+
+  Music streams[ENGINE_MAX_STREAMS];
+  int stream_count;
 } Engine;
 
 Engine *engine_init(const char *game_path);

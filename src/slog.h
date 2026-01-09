@@ -1,208 +1,187 @@
-/* slog - v1.0.0 - MIT License - https://github.com/aineejames/slog.h
+/* slog.h v1.0.0 - www.github.com/AineeJames/slog.h - MIT
+ *
+ * A simple single header logging library.
+ *
+ * Cheatsheet:
+ *    debug(fmt, ...);
+ *    info(fmt, ...);
+ *    warning(fmt, ...);
+ *    error(fmt, ...);
+ *    fatal(fmt, ...);   // If using the default handler, this will call
+ *                          exit(EXIT_FAILURE).
+ *
+ *    Slog_Handler *handler = slog_get_handler(); // Gets the current handler.
+ *    slog_set_handler(Slog_Handler *handler);    // Sets the logging handler.
+ *    slog_set_level(Slog_Level level);           // Sets the base logging
+ *                                                   level.
+ *
+ * Available handlers:
+ *    slog_default_handler // This is the default handler used by slog.h
+ *    slog_color_handler   // Same as [slog_default_handler] but colorful.
+ */
 
-  This library is aimed to easily add a logging system to a c project.
-
-  # Basic example:
-  ```c
-  #define SLOG_IMPLEMENTATION
-  #include "slog.h"
-
-  int main(int argc, char *argv[]) {
-    slog_set_handler(slog_color_handler); // Enable colored output (optional).
-
-    slog(INFO, "Hello, world!");
-    slog(FATAL, "Terminating program.");
-
-    return EXIT_SUCCESS;
-  }
-  ```
-
-  # Redefining loggin and fatal handlers:
-  ```c
-  #include <stdio.h>
-
-  #define SLOG_IMPLEMENTATION
-  #include "slog.h"
-
-  void noop(void) { return; }
-
-  void no_prefix_handler(slog_Level level, const char *fmt, va_list args) {
-    vprintf(fmt, args);
-    printf("\n");
-
-    if (level == FATAL) {
-      slog_fatal();
-    }
-  }
-
-  int main(int argc, char *argv[]) {
-    slog_set_fatal_handler(noop); // Configure FATAL logs to not exit.
-
-    // Save off default handler
-    slog_handler *save = slog_get_handler(); {
-      slog_set_handler(no_prefix_handler);   // Use our no_prefix_handler
-
-      slog(INFO, "No prefix to the left...");
-    } slog_set_handler(save);                // Restore default log handler
-
-    slog(INFO, "Prefix is back to normal...");
-
-    slog(FATAL, "This wont cause the program to exit.");
-    slog(INFO, "See, I told you so...");
-  }
-  ```
-
-*/
-
-#ifndef SLOG_H_
-#define SLOG_H_
+#ifndef SLOG_H
+#define SLOG_H
 
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 
 #if defined(__GNUC__) || defined(__clang__)
-#define SLOG_PRINTF_FORMAT(fmt_index, first_to_check)                          \
-  __attribute__((format(printf, fmt_index, first_to_check)))
-#elif defined(_MSC_VER)
-#include <sal.h>
-#define SLOG_PRINTF_FORMAT(fmt_index, first_to_check) _Printf_format_string_
+#define SLOG_PRINTF_FORMAT(FormatIdx, FirstArg)                                \
+  __attribute__((format(printf, FormatIdx, FirstArg)))
 #else
-#define SLOG_PRINTF_FORMAT(fmt_index, first_to_check)
+#define SLOG_PRINTF_FORMAT(FormatIdx, FirstArg)
 #endif
 
 typedef enum {
-  INFO,
-  WARNING,
-  ERROR,
-  FATAL,
-} slog_Level;
+  SLOG_DEBUG,
+  SLOG_INFO,
+  SLOG_WARNING,
+  SLOG_ERROR,
+  SLOG_FATAL,
+} Slog_Level;
 
-typedef void(slog_handler)(slog_Level level, const char *fmt, va_list args);
-typedef void(slog_fatal_handler)(void);
+#define debug(fmt, ...)                                                        \
+  slog(__FILE__, __LINE__, SLOG_DEBUG, (fmt), ##__VA_ARGS__)
+#define info(fmt, ...) slog(__FILE__, __LINE__, SLOG_INFO, (fmt), ##__VA_ARGS__)
+#define warning(fmt, ...)                                                      \
+  slog(__FILE__, __LINE__, SLOG_WARNING, (fmt), ##__VA_ARGS__)
+#define error(fmt, ...)                                                        \
+  slog(__FILE__, __LINE__, SLOG_ERROR, (fmt), ##__VA_ARGS__)
+#define fatal(fmt, ...)                                                        \
+  slog(__FILE__, __LINE__, SLOG_FATAL, (fmt), ##__VA_ARGS__)
 
-void slog_set_handler(slog_handler *handler);
-slog_handler *slog_get_handler(void);
+void slog(const char *file, int line, Slog_Level level, const char *fmt, ...)
+    __attribute__((format(printf, 4, 5)));
 
-void slog_set_fatal_handler(slog_fatal_handler *handler);
-slog_fatal_handler *slog_get_fatal_handler(void);
+typedef struct {
+  void *ctx;
+} Slog_Handler_Opt;
 
-void slog_default_handler(slog_Level level, const char *fmt, va_list args);
-void slog_color_handler(slog_Level level, const char *fmt, va_list args);
-void slog_default_fatal(void);
+typedef struct {
+  const char *file;
+  int line;
+} Slog_Src;
 
-void slog(slog_Level level, const char *fmt, ...) SLOG_PRINTF_FORMAT(2, 3);
+typedef struct {
+  Slog_Src src;
+  Slog_Level level;
+  const char *fmt;
+  va_list args;
+  void *ctx;
+} Slog_Record;
 
-void slog_fatal(void);
+typedef void(Slog_Handler)(Slog_Record *record);
 
-#endif // SLOG_H_
+void slog_default_handler(Slog_Record *record);
+void slog_color_handler(Slog_Record *record);
+
+#define slog_set_handler(handler, ...)                                         \
+  slog_set_handler_opt((handler), (Slog_Handler_Opt){__VA_ARGS__})
+
+void slog_set_handler_opt(Slog_Handler *handler, Slog_Handler_Opt opt);
+Slog_Handler *slog_get_handler(void);
+
+void slog_set_level(Slog_Level level);
 
 #ifdef SLOG_IMPLEMENTATION
 
-static slog_handler *slog__handler = &slog_default_handler;
-static slog_fatal_handler *slog__fatal_handler = &slog_default_fatal;
+static Slog_Handler *__slog_handler = &slog_default_handler;
+static void *__slog_ctx = NULL;
+static Slog_Level __slog_level = SLOG_DEBUG;
 
-void slog_set_handler(slog_handler *handler) { slog__handler = handler; }
+void slog_set_level(Slog_Level level) { __slog_level = level; }
 
-slog_handler *slog_get_handler(void) { return slog__handler; }
+void slog_default_handler(Slog_Record *record) {
+  printf("%s:%d ", record->src.file, record->src.line);
 
-void slog_set_fatal_handler(slog_fatal_handler *handler) {
-  slog__fatal_handler = handler;
-}
-
-slog_fatal_handler *slog_get_fatal_handler(void) { return slog__fatal_handler; }
-
-void slog_fatal(void) { slog__fatal_handler(); }
-
-void slog_default_fatal(void) { exit(EXIT_FAILURE); }
-
-void slog_default_handler(slog_Level level, const char *fmt, va_list args) {
-  FILE *outfile = level == INFO || level == WARNING ? stdout : stderr;
-
-  switch (level) {
-  case INFO:
-    fprintf(outfile, "[INFO] ");
+  switch (record->level) {
+  case SLOG_DEBUG:
+    printf("[DEBUG] ");
     break;
-  case WARNING:
-    fprintf(outfile, "[WARNING] ");
+  case SLOG_INFO:
+    printf("[INFO] ");
     break;
-  case ERROR:
-    fprintf(outfile, "[ERROR] ");
+  case SLOG_WARNING:
+    printf("[WARNING] ");
     break;
-  case FATAL:
-    fprintf(outfile, "[FATAL] ");
+  case SLOG_ERROR:
+    printf("[ERROR] ");
+    break;
+  case SLOG_FATAL:
+    printf("[FATAL] ");
     break;
   }
 
-  vfprintf(outfile, fmt, args);
-  fprintf(outfile, "\n");
+  vprintf(record->fmt, record->args);
+  printf("\n");
 
-  if (level == FATAL)
-    slog_fatal();
+  if (record->level == SLOG_FATAL)
+    exit(EXIT_FAILURE);
 }
 
-void slog_color_handler(slog_Level level, const char *fmt, va_list args) {
-  FILE *outfile = level == INFO || level == WARNING ? stdout : stderr;
+void slog_color_handler(Slog_Record *record) {
+  printf("\x1b[2m%s:%d [\x1b[0m", record->src.file, record->src.line);
 
-  switch (level) {
-  case INFO:
-    fprintf(outfile, "\x1b[32m[INFO]\x1b[0m ");
+  switch (record->level) {
+  case SLOG_DEBUG:
+    printf("\x1b[34mDEBUG\x1b[0m"); // Blue
     break;
-  case WARNING:
-    fprintf(outfile, "\x1b[33m[WARNING]\x1b[0m ");
+  case SLOG_INFO:
+    printf("\x1b[32mINF0\x1b[0m"); // Green
     break;
-  case ERROR:
-    fprintf(outfile, "\x1b[31m[ERROR]\x1b[0m ");
+  case SLOG_WARNING:
+    printf("\x1b[33mWARNING\x1b[0m"); // Yellow
     break;
-  case FATAL:
-    fprintf(outfile, "\x1b[35m[FATAL]\x1b[0m ");
+  case SLOG_ERROR:
+    printf("\x1b[31mERROR\x1b[0m"); // Red
+    break;
+  case SLOG_FATAL:
+    printf("\x1b[35mFATAL\x1b[0m"); // Magenta
     break;
   }
 
-  vfprintf(outfile, fmt, args);
-  fprintf(outfile, "\n");
-
-  if (level == FATAL)
-    slog_fatal();
+  printf("\x1b[2m]\x1b[0m ");
+  vprintf(record->fmt, record->args);
+  printf("\n");
 }
 
-void slog(slog_Level level, const char *fmt, ...) {
+void slog(const char *file, int line, Slog_Level level, const char *fmt, ...) {
+  if (level < __slog_level)
+    return;
+
   va_list args;
   va_start(args, fmt);
-  slog__handler(level, fmt, args);
+
+  Slog_Record record = {
+      .src = {.file = file, .line = line},
+      .level = level,
+      .fmt = fmt,
+      .ctx = __slog_ctx,
+  };
+
+  va_copy(record.args, args);
+
+  __slog_handler(&record);
+
+  va_end(record.args);
   va_end(args);
 }
 
+void slog_set_handler_opt(Slog_Handler *handler, Slog_Handler_Opt opt) {
+  __slog_handler = handler;
+
+  if (opt.ctx)
+    __slog_ctx = opt.ctx;
+}
+
+Slog_Handler *slog_get_handler(void) { return __slog_handler; }
+
 #endif // SLOG_IMPLEMENTATION
 
-/*
-  Revision history:
+#endif // SLOG_H
 
-    1.0.0 (2025-12-30) first release
-
-*/
-
-/*
-  MIT License
-
-  Copyright (c) 2025 Aiden Olsen
-
-  Permission is hereby granted, free of charge, to any person obtaining a copy
-  of this software and associated documentation files (the "Software"), to deal
-  in the Software without restriction, including without limitation the rights
-  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-  copies of the Software, and to permit persons to whom the Software is
-  furnished to do so, subject to the following conditions:
-
-  The above copyright notice and this permission notice shall be included in all
-  copies or substantial portions of the Software.
-
-  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-  SOFTWARE.
-*/
+/* Revision history:
+ *    v1.0.0 - Initial release of slog.h
+ */

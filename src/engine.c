@@ -92,15 +92,37 @@ bool poll_lua_file_change(Engine *engine) {
 #endif
 
   return change;
+static void CustomTraceLog(int msgType, const char *text, va_list args) {
+  char buf[1024];
+  vsnprintf(buf, sizeof buf, text, args);
+
+  switch (msgType) {
+  case LOG_INFO:
+    info("%s", buf);
+    break;
+  case LOG_ERROR:
+    error("%s", buf);
+    break;
+  case LOG_WARNING:
+    warning("%s", buf);
+    break;
+  case LOG_DEBUG:
+    debug("%s", buf);
+    break;
+  case LOG_FATAL:
+    fatal("%s", buf);
+    break;
+  }
 }
 
 Engine *engine_init(const char *game_path) {
   Engine *engine = malloc(sizeof(Engine));
   assert(engine);
 
-  engine->running = false;
+  engine->running = true;
   engine->exit_code = 0;
   engine->game_path = game_path;
+  engine->stream_count = 0;
 
   init_lua_file_watch(engine);
 
@@ -109,10 +131,12 @@ Engine *engine_init(const char *game_path) {
   luaL_openlibs(engine->L);
   register_lua_api(engine);
 
-  SetTraceLogLevel(LOG_NONE);
+  SetTraceLogCallback(CustomTraceLog);
   InitWindow(0, 0, "te");
+  InitAudioDevice();
   SetWindowMonitor(0);
   ToggleFullscreen();
+  SetTraceLogLevel(LOG_WARNING);
 
   int sw = GetScreenWidth();
   int sh = GetScreenHeight();
@@ -122,7 +146,13 @@ Engine *engine_init(const char *game_path) {
   engine->grid = grid_init(w, h);
   grid_fill(engine->grid, CELL_EMPTY);
 
-  init_engine_lua_script(engine);
+  const char *main_path = TextFormat("%s/main.lua", engine->game_path);
+  if (luaL_dofile(engine->L, main_path) != LUA_OK) {
+    fatal("Failed to load main.lua: %s", lua_tostring(engine->L, -1));
+    return engine;
+  }
+
+  call_load(engine->L);
 
   engine->renderer = renderer_init(engine);
 
@@ -137,6 +167,7 @@ Engine *engine_init(const char *game_path) {
                  engine->renderer->grid_shader.gridSizeLoc, grid_size,
                  SHADER_UNIFORM_IVEC2);
 
+  info("Initialized te successfully!");
   return engine;
 }
 
@@ -152,8 +183,6 @@ void handle_all_keypresses(Engine *engine) {
 }
 
 int engine_run(Engine *engine) {
-  engine->running = true;
-
   while (engine->running) {
     float dt = GetFrameTime();
 
@@ -167,6 +196,11 @@ int engine_run(Engine *engine) {
     /* --- Update --- */
     call_update(engine->L, dt);
 
+    /* --- Update streaming audio --- */
+    for (int i = 0; i < engine->stream_count; i++) {
+      UpdateMusicStream(engine->streams[i]);
+    }
+
     /* --- Draw --- */
     call_draw(engine->L);
 
@@ -177,9 +211,12 @@ int engine_run(Engine *engine) {
 }
 
 void engine_free(Engine *engine) {
-  lua_close(engine->L);
-  renderer_free(engine->renderer);
-  grid_free(engine->grid);
+  if (engine->L)
+    lua_close(engine->L);
+  if (engine->renderer)
+    renderer_free(engine->renderer);
+  if (engine->grid)
+    grid_free(engine->grid);
   CloseWindow();
   free(engine);
 }
